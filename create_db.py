@@ -11,8 +11,8 @@ class Bird(Base):
     species_lt = Column(String)
     species_en = Column(String)
     species_latin = Column(String)
-    status_id = Column(Integer, ForeignKey('status.id'))
-    status = relationship('Status', back_populates='bird')
+    # status_id = Column(Integer, ForeignKey('status.id'))
+    # status = relationship('Status', back_populates='bird')
     bird_observation = relationship('BirdObservation', back_populates='bird')
 
     def __init__(self, species_lt, species_en, species_latin):
@@ -20,16 +20,16 @@ class Bird(Base):
         self.species_en = species_en
         self.species_latin = species_latin
 
-class Status(Base):
-    __tablename__ = 'status'
-    id = Column(Integer, primary_key=True)
-    status_name_lt = Column(String)
-    status_name_en = Column(String)
-    bird = relationship('Bird', back_populates='status')
+# class Status(Base):
+#     __tablename__ = 'status'
+#     id = Column(Integer, primary_key=True)
+#     status_name_lt = Column(String)
+#     status_name_en = Column(String)
+#     bird = relationship('Bird', back_populates='status')
 
-    def __init__(self, status_name_lt, status_name_en):
-        self.status_name_lt = status_name_lt
-        self.status_name_en = status_name_en
+#     def __init__(self, status_name_lt, status_name_en):
+#         self.status_name_lt = status_name_lt
+#         self.status_name_en = status_name_en
 
 class Observer(Base):
     __tablename__ = 'observer'

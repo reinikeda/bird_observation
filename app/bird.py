@@ -13,22 +13,23 @@ class BirdList:
         self.main.title('BOA: Bird Observation App')
         self.main.config(bg='#e4fafd')
         self.l_title = Label(self.main, text='Bird list from database', bg='#e4fafd')
-        self.columns = ('id', 'species_lt', 'species_en', 'species_latin', 'status_id')
+        self.columns = ('id', 'species_lt', 'species_en', 'species_latin')
         self.tree = ttk.Treeview(self.main, columns=self.columns, show='headings')
         self.tree.heading('id', text='ID')
+        self.tree.column('id', width=50)
         self.tree.heading('species_lt', text='Species name in LT')
         self.tree.heading('species_en', text='Species name in EN')
         self.tree.heading('species_latin', text='Species name in latin')
-        self.tree.heading('status_id', text='Bird status')
         self.tree.insert('', END, self.read_birds())
-        # self.tree_scrollbar = Scrollbar(self.main, command=self.tree.yview)
-        # self.tree.config(yscrollcommand=self.tree_scrollbar.set)
+        self.tree_scrollbar = Scrollbar(self.main, command=self.tree.yview)
+        self.tree.config(yscrollcommand=self.tree_scrollbar.set)
 
         self.b_exit = Button(self.main, text='Exit', bg='#c2e7ec', activebackground='#a4d8df', pady=10, width=20, command=self.main.destroy)
 
-        self.l_title.pack()
-        self.tree.pack()
-        self.b_exit.pack(pady=10)
+        self.l_title.grid(row=0, column=0, columnspan=2)
+        self.tree.grid(row=1, column=0)
+        self.tree_scrollbar.grid(row=1, column=1, sticky=NS)
+        self.b_exit.grid(row=2, column=0, columnspan=2, pady=10)
 
     def read_birds(self):
         with conn:

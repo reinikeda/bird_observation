@@ -15,20 +15,22 @@ class ObserverList:
         self.columns = ('id', 'f_name', 'l_name', 'birth_date', 'gender', 'email')
         self.tree = ttk.Treeview(self.main, columns=self.columns, show='headings')
         self.tree.heading('id', text='ID')
+        self.tree.column('id', width=50)
         self.tree.heading('f_name', text='First name')
         self.tree.heading('l_name', text='Last name')
         self.tree.heading('birth_date', text='Date of birth')
         self.tree.heading('gender', text='Gender')
         self.tree.heading('email', text='Email')
         self.tree.insert('', END, self.read_observers())
-        # self.tree_scrollbar = Scrollbar(self.main, command=self.tree.yview)
-        # self.tree.config(yscrollcommand=self.tree_scrollbar.set)
+        self.tree_scrollbar = Scrollbar(self.main, command=self.tree.yview)
+        self.tree.config(yscrollcommand=self.tree_scrollbar.set)
 
         self.b_exit = Button(self.main, text='Exit', bg='#c2e7ec', activebackground='#a4d8df', pady=10, width=20, command=self.main.destroy)
 
-        self.l_title.pack()
-        self.tree.pack()
-        self.b_exit.pack(pady=10)
+        self.l_title.grid(row=0, column=0, columnspan=2)
+        self.tree.grid(row=1, column=0)
+        self.tree_scrollbar.grid(row=1, column=1, sticky=NS)
+        self.b_exit.grid(row=2, column=0, columnspan=2, pady=10)
 
     def read_observers(self):
         with conn:
