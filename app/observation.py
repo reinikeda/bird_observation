@@ -49,16 +49,13 @@ class ObservationList:
         self.l_date = Label(self.f_insert, text='Enter date', bg='#e4fafd')
         self.e_date = Entry(self.f_insert)
         self.b_add = MyButton(self.f_insert, text='Add to database', command=self.add_new)
-        self.b_clear = MyButton(self.f_insert, text='Clear boxes', command=self.clear)
-        self.b_restart = MyButton(self.f_insert, text='Show/Restart list', command=self.read_observations)
         self.b_delete = MyButton(self.f_insert, text='Delete selected', command=self.delete_row)
-        self.status = Label(self.f_insert, text='Latest database information', relief=SUNKEN, border=1, bg='#e4fafd')
 
         self.f_search = Frame(self.main, bg='#e4fafd')
         self.l_search = Label(self.f_search, text='Search', bg='#e4fafd')
         self.e_search = Entry(self.f_search)
         self.b_search = MyButton(self.f_search, text='Search', command=self.search)
-        self.b_search_clean = MyButton(self.f_search, text='Clear boxes', command=self.clear)
+        self.b_all = MyButton(self.f_search, text='Show all', command=self.read_observations)
         self.b_exit = MyButton(self.f_search, text='Exit', command=self.main.destroy)
 
         self.f_top.pack()
@@ -79,17 +76,14 @@ class ObservationList:
         self.l_date.grid(row=1, column=4, padx=5)
         self.e_date.grid(row=2, column=4, padx=5)
         self.b_add.grid(row=2, column=5, padx=5)
-        self.b_clear.grid(row=3, column=5, padx=5)
-        self.b_restart.grid(row=2, column=6, padx=5)
-        self.b_delete.grid(row=3, column=6, padx=5)
-        self.status.grid(row=3, column=0, columnspan=7, sticky=NW, padx=5, pady=20)
+        self.b_delete.grid(row=2, column=6, padx=5)
 
-        self.f_search.pack(side=RIGHT, pady=20)
+        self.f_search.pack(side=RIGHT, padx=10)
         self.l_search.grid(row=0, column=0, padx=5)
         self.e_search.grid(row=1, column=0, padx=5)
         self.b_search.grid(row=1, column=1, padx=5)
-        self.b_search_clean.grid(row=1, column=2, padx=10)
-        self.b_exit.grid(row=2, column=2, padx=10, pady=10)
+        self.b_all.grid(row=1, column=2, padx=5)
+        self.b_exit.grid(row=2, column=2, padx=5, pady=10)
 
     def read_observations(self):
         self.tree.delete(*self.tree.get_children())
@@ -126,20 +120,6 @@ class ObservationList:
                 places_list.append(row[1])
             return places_list
 
-    def add_new(self):
-        # reikia gauti ID vietoje NAME
-        add_new_row(self.observer.get(), self.bird.get(), self.e_number.get(), self.place.get(), self.e_date.get())
-        self.read_observations()
-        self.status['text'] = f'Added new entry {self.bird.get()} from {self.observer.get()}. Click button to restart the list.'
-
-    def delete_row(self):
-        self.selected_row = self.tree.focus()
-        self.row_id = int((self.tree.item(self.selected_row, 'values'))[0])
-        c.execute('DELETE FROM bird_observation WHERE id=?', (self.row_id,))
-        conn.commit()
-        self.read_observations()
-        self.status['text'] = f'Selected row was deleted'
-
     def clear(self):
         self.observer.set('')
         self.bird.set('')
@@ -148,14 +128,26 @@ class ObservationList:
         self.e_date.delete(0, END)
         self.e_search.delete(0, END)
 
+    def add_new(self):
+        add_new_observation(self.observer.get(), self.bird.get(), self.e_number.get(), self.place.get(), self.e_date.get())
+        self.read_observations()
+        self.clear()
+
+    def delete_row(self):
+        self.selected_row = self.tree.focus()
+        self.row_id = int((self.tree.item(self.selected_row, 'values'))[0])
+        c.execute('DELETE FROM bird_observation WHERE id=?', (self.row_id,))
+        conn.commit()
+        self.read_observations()
+
     def search(self):
         for rows in self.tree.get_children():
             self.tree.delete(rows)
         self.search_observer = self.e_search.get()
         self.search_observer = f'%{self.search_observer}%'
-
         with conn:
             c.execute('SELECT * FROM bird_observation WHERE observer_id LIKE ? OR bird_id LIKE ? OR place_id LIKE ? OR date LIKE ?', (self.search_observer, self.search_observer, self.search_observer, self.search_observer,))
             rows = c.fetchall()
             for row in rows:
                 self.tree.insert('', END, values=row)
+        self.clear()
