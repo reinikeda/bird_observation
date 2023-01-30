@@ -1,10 +1,12 @@
 from tkinter import *
 from tkinter import ttk
-from app.back_end import *
-import sqlite3
+from create_db import *
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
 
-conn = sqlite3.connect('sqlite:///../data/birds_observation.db')
-c = conn.cursor()
+engine = create_engine('sqlite:///data/birds_observation.db')
+session = sessionmaker(bind=engine)()
+
 
 class MyButton(Button):
     def __init__(self, master, *args, **kwargs):
@@ -72,12 +74,9 @@ class ObserverList:
         self.b_exit.grid(row=3, column=6, padx=5, pady=10)
 
     def read_observers(self):
-        self.tree.delete(*self.tree.get_children())
-        with conn:
-            c.execute('SELECT * FROM observer')
-            rows = c.fetchall()
-            for row in rows:
-                self.tree.insert('', END, values=row)
+        observers = session.query(Observer).all()
+        for row in observers:
+            self.tree.insert('', END, values=(row.id, row.f_name, row.l_name, row.birth_date, row.gender, row.email))
 
     def clear(self):
         self.e_f_name.delete(0, END)
@@ -87,13 +86,18 @@ class ObserverList:
         self.e_email.delete(0, END)
 
     def add_new(self):
-        add_new_observer(self.e_f_name.get(), self.e_l_name.get(), self.e_birth_date.get(), self.gender.get(), self.e_email.get())
+        self.tree.delete(*self.tree.get_children())
+        self.new_observer = Observer(self.e_f_name.get(), self.e_l_name.get(), self.e_birth_date.get(), self.gender.get(), self.e_email.get())
+        session.add(self.new_observer)
+        session.commit()
         self.read_observers()
         self.clear()
 
     def delete_row(self):
         self.selected_row = self.tree.focus()
         self.row_id = int((self.tree.item(self.selected_row, 'values'))[0])
-        c.execute('DELETE FROM observer WHERE id=?', (self.row_id,))
-        conn.commit()
+        self.delete = session.query(Observer).get(self.row_id)
+        session.delete(self.delete)
+        session.commit()
+        self.tree.delete(*self.tree.get_children())
         self.read_observers()

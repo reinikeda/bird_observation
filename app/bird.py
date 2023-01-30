@@ -1,9 +1,11 @@
 from tkinter import *
 from tkinter import ttk
-import sqlite3
+from create_db import *
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
 
-conn = sqlite3.connect('sqlite:///../data/birds_observation.db')
-c = conn.cursor()
+engine = create_engine('sqlite:///data/birds_observation.db')
+session = sessionmaker(bind=engine)()
 
 
 class BirdList:
@@ -32,8 +34,6 @@ class BirdList:
         self.b_exit.grid(row=2, column=0, columnspan=2, pady=10)
 
     def read_birds(self):
-        with conn:
-            c.execute('SELECT * FROM bird')
-            rows = c.fetchall()
-            for row in rows:
-                self.tree.insert('', END, values=row)
+        self.birds = session.query(Bird).all()
+        for row in self.birds:
+            self.tree.insert('', END, values=(row.id, row.species_lt, row.species_en, row.species_latin))

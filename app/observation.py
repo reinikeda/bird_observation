@@ -1,11 +1,16 @@
 from tkinter import *
 from tkinter import ttk
 from create_db import *
-from app.back_end import *
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
 import sqlite3
 
 conn = sqlite3.connect('sqlite:///../data/birds_observation.db')
 c = conn.cursor()
+
+engine = create_engine('sqlite:///data/birds_observation.db')
+session = sessionmaker(bind=engine)()
+
 
 class MyButton(Button):
     def __init__(self, master, *args, **kwargs):
@@ -88,37 +93,31 @@ class ObservationList:
     def read_observations(self):
         self.tree.delete(*self.tree.get_children())
         with conn:
-            c.execute('SELECT * FROM bird_observation')
+            c.execute('SELECT bird_observation.id, observer.f_name || " " || observer.l_name as observer_name, bird.species_lt, bird_observation.number, place.place, bird_observation.date FROM bird_observation JOIN observer ON observer_id = observer.id JOIN bird ON bird_id = bird.id JOIN place ON place_id = place.id;')
             rows = c.fetchall()
             for row in rows:
                 self.tree.insert('', END, values=row)
 
     def read_observers(self):
-        with conn:
-            c.execute('SELECT id, f_name, l_name FROM observer')
-            rows = c.fetchall()
-            observer_list = []
-            for row in rows:
-                observer_list.append(row[1:3])
-            return observer_list
+        observers = session.query(Observer).all()
+        observer_list = []
+        for row in observers:
+            observer_list.append(str(row.id) + ': ' + row.f_name + ' ' + row.l_name)
+        return observer_list
 
     def read_birds(self):
-        with conn:
-            c.execute('SELECT id, species_lt FROM bird')
-            rows = c.fetchall()
-            bird_list = []
-            for row in rows:
-                bird_list.append(row[1])
-            return bird_list
+        birds = session.query(Bird).all()
+        bird_list = []
+        for row in birds:
+            bird_list.append(str(row.id) + ': ' + row.species_lt)
+        return bird_list
 
     def read_places(self):
-        with conn:
-            c.execute('SELECT id, place FROM place')
-            rows = c.fetchall()
-            places_list = []
-            for row in rows:
-                places_list.append(row[1])
-            return places_list
+        places = session.query(Place).all()
+        places_list = []
+        for row in places:
+            places_list.append(str(row.id) + ': ' + row.place)
+        return places_list
 
     def clear(self):
         self.observer.set('')
@@ -129,24 +128,28 @@ class ObservationList:
         self.e_search.delete(0, END)
 
     def add_new(self):
-        add_new_observation(self.observer.get(), self.bird.get(), self.e_number.get(), self.place.get(), self.e_date.get())
+        self.new_observation = BirdObservation(int(self.observer.get()[0]), int(self.bird.get()[0]), int(self.e_number.get()), int(self.place.get()[0]), self.e_date.get())
+        session.add(self.new_observation)
+        session.commit()
         self.read_observations()
         self.clear()
 
     def delete_row(self):
         self.selected_row = self.tree.focus()
         self.row_id = int((self.tree.item(self.selected_row, 'values'))[0])
-        c.execute('DELETE FROM bird_observation WHERE id=?', (self.row_id,))
-        conn.commit()
+        self.delete = session.query(BirdObservation).get(self.row_id)
+        session.delete(self.delete)
+        session.commit()
+        self.tree.delete(*self.tree.get_children())
         self.read_observations()
 
     def search(self):
         for rows in self.tree.get_children():
             self.tree.delete(rows)
-        self.search_observer = self.e_search.get()
-        self.search_observer = f'%{self.search_observer}%'
+        self.search_all = self.e_search.get()
+        self.search_all = f'%{self.search_all}%'
         with conn:
-            c.execute('SELECT * FROM bird_observation WHERE observer_id LIKE ? OR bird_id LIKE ? OR place_id LIKE ? OR date LIKE ?', (self.search_observer, self.search_observer, self.search_observer, self.search_observer,))
+            c.execute('SELECT bird_observation.id, observer.f_name || " " || observer.l_name as observer_name, bird.species_lt, bird_observation.number, place.place, bird_observation.date FROM bird_observation JOIN observer ON observer_id = observer.id JOIN bird ON bird_id = bird.id JOIN place ON place_id = place.id WHERE observer.f_name LIKE ? OR observer.l_name LIKE ? OR bird.species_lt LIKE ? OR place.place LIKE ? ', (self.search_all, self.search_all, self.search_all, self.search_all,))
             rows = c.fetchall()
             for row in rows:
                 self.tree.insert('', END, values=row)
